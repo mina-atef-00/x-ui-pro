@@ -150,16 +150,24 @@ if [[ "${UNINSTALL}" == *"y"* ]]; then
 fi
 ##############################Domain Validations#########################################################
 while [[ -z $(echo "$domain" | tr -d '[:space:]') ]]; do
-	read -rp $'\e[1;32;40m Enter available subdomain (sub.domain.tld): \e[0m' domain
+    read -rp $'\e[1;32;40m Enter available subdomain (sub.domain.tld): \e[0m' domain
 done
 
-domain=$(echo "$domain" 2>&1 | tr -d '[:space:]' )
-SubDomain=$(echo "$domain" 2>&1 | sed 's/^[^ ]* \|\..*//g')
-MainDomain=$(echo "$domain" 2>&1 | sed 's/.*\.\([^.]*\..*\)$/\1/')
+# Remove any whitespace from the input
+domain=$(echo "$domain" | tr -d '[:space:]')
 
-if [[ "${SubDomain}.${MainDomain}" != "${domain}" ]] ; then
-	MainDomain=${domain}
+# If the domain ends with "duckdns.org", use the entire string as the MainDomain.
+if [[ "$domain" =~ duckdns\.org$ ]]; then
+    MainDomain="$domain"
+else
+    # Original logic for non-DuckDNS domains
+    SubDomain=$(echo "$domain" | sed 's/^[^ ]* \|\..*//g')
+    MainDomain=$(echo "$domain" | sed 's/.*\.\([^.]*\..*\)$/\1/')
+    if [[ "${SubDomain}.${MainDomain}" != "${domain}" ]]; then
+        MainDomain="$domain"
+    fi
 fi
+
 ###############################Install Packages#########################################################
 $Pak -y update
 for pkg in epel-release cronie psmisc unzip curl nginx nginx-full certbot python3-certbot-nginx sqlite sqlite3 jq openssl tor tor-geoipdb; do
